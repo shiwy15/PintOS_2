@@ -50,6 +50,7 @@ uninit_initialize (struct page *page, void *kva) {
 	/* Fetch first, page_initialize may overwrite the values */
 	vm_initializer *init = uninit->init;
 	void *aux = uninit->aux;
+	uninit->swap_index = -1; //pjt3 추가
 
 	/* TODO: You may need to fix this function. */
 	return uninit->page_initializer (page, uninit->type, kva) &&
@@ -61,8 +62,11 @@ uninit_initialize (struct page *page, void *kva) {
  * exit, which are never referenced during the execution.
  * PAGE will be freed by the caller. */
 static void
-uninit_destroy (struct page *page) {
+uninit_destroy(struct page *page)
+{
 	struct uninit_page *uninit UNUSED = &page->uninit;
-	/* TODO: Fill this function.
-	 * TODO: If you don't have anything to do, just return. */
+	struct lazy_load_info *aux = (struct lazy_load_info *)(uninit->aux);
+
+	free(aux);
 }
+

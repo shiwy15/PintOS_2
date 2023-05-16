@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "vm.h": "c",
+        "inspect.h": "c",
+        "*.tcc": "c",
+        "memory": "c",
+        "algorithm": "c",
+        "limits": "c",
+        "system_error": "c"
+    }
+}

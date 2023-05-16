@@ -21,9 +21,7 @@ static void rehash (struct hash *);
 
 /* Initializes hash table H to compute hash values using HASH and
    compare hash elements using LESS, given auxiliary data AUX. */
-bool
-hash_init (struct hash *h,
-		hash_hash_func *hash, hash_less_func *less, void *aux) {
+bool hash_init (struct hash *h, hash_hash_func *hash, hash_less_func *less, void *aux) {
 	h->elem_cnt = 0;
 	h->bucket_cnt = 4;
 	h->buckets = malloc (sizeof *h->buckets * h->bucket_cnt);
@@ -118,7 +116,9 @@ hash_replace (struct hash *h, struct hash_elem *new) {
 }
 
 /* Finds and returns an element equal to E in hash table H, or a
-   null pointer if no equal element exists in the table. */
+   null pointer if no equal element exists in the table.
+   해시 테이블 H에서 요소 E와 동일한 요소를 찾아 반환하거나,
+   테이블에 동일한 요소가 없는 경우 널 포인터를 반환하는 함수*/
 struct hash_elem *
 hash_find (struct hash *h, struct hash_elem *e) {
 	return find_elem (h, find_bucket (h, e), e);
@@ -239,7 +239,8 @@ hash_empty (struct hash *h) {
 #define FNV_64_PRIME 0x00000100000001B3UL
 #define FNV_64_BASIS 0xcbf29ce484222325UL
 
-/* Returns a hash of the SIZE bytes in BUF. */
+/* Returns a hash of the SIZE bytes in BUF.
+주어진 버퍼의 바이트에 대한 해시 값을 계산하는 함수 */
 uint64_t
 hash_bytes (const void *buf_, size_t size) {
 	/* Fowler-Noll-Vo 32-bit hash, for bytes. */
@@ -284,9 +285,10 @@ find_bucket (struct hash *h, struct hash_elem *e) {
 }
 
 /* Searches BUCKET in H for a hash element equal to E.  Returns
-   it if found or a null pointer otherwise. */
-static struct hash_elem *
-find_elem (struct hash *h, struct list *bucket, struct hash_elem *e) {
+   it if found or a null pointer otherwise.
+   주어진 버킷 BUCKET에서 시작하여 해시 테이블 내에서 E와 동일한 해시 요소를 선형 검색하여
+   찾을 경우 해당 hash_elem을 반환하고, 아니면 null을 반환하는 함수	*/
+static struct hash_elem *find_elem (struct hash *h, struct list *bucket, struct hash_elem *e) {
 	struct list_elem *i;
 
 	for (i = list_begin (bucket); i != list_end (bucket); i = list_next (i)) {
@@ -317,7 +319,8 @@ is_power_of_2 (size_t x) {
 /* Changes the number of buckets in hash table H to match the
    ideal.  This function can fail because of an out-of-memory
    condition, but that'll just make hash accesses less efficient;
-   we can still continue. */
+   we can still continue.
+   해시 테이블 H의 버킷 수를 이상적인 값에 맞추기 위해 변경하는 함수 */
 static void
 rehash (struct hash *h) {
 	size_t old_bucket_cnt, new_bucket_cnt;
@@ -391,4 +394,3 @@ remove_elem (struct hash *h, struct hash_elem *e) {
 	h->elem_cnt--;
 	list_remove (&e->list_elem);
 }
-

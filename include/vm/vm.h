@@ -2,6 +2,7 @@
 #define VM_VM_H
 #include <stdbool.h>
 #include "threads/palloc.h"
+#include "hash.h"  //pjt3 JK 추가
 
 enum vm_type {
 	/* page not initialized */
@@ -53,8 +54,14 @@ struct page {
 		struct uninit_page uninit;
 		struct anon_page anon;
 		struct file_page file;
+
+	/*------------------ pjt03 JK---------------------*/
+	struct hash_elem hash_elem;
+	bool writable;
+	struct thread *t;
+	/*------------------ pjt03 JK---------------------*/
 #ifdef EFILESYS
-		struct page_cache page_cache;
+			struct page_cache page_cache;
 #endif
 	};
 };
@@ -63,6 +70,7 @@ struct page {
 struct frame {
 	void *kva;
 	struct page *page;
+	struct list_elem frame_elem; // pjt3 추가
 };
 
 /* The function table for page operations.
@@ -83,9 +91,22 @@ struct page_operations {
 
 /* Representation of current process's memory space.
  * We don't want to force you to obey any specific design for this struct.
- * All designs up to you for this. */
+ * All designs up to you for this.
+ * 현재 프로세스의 메모리 공간 표현. */
 struct supplemental_page_table {
+	struct hash spt_hash;
 };
+
+/*------------------ pjt03 JK---------------------*/
+struct lazy_load_info
+{
+	struct file *file;
+	off_t ofs;
+	size_t page_read_bytes;
+	size_t page_zero_bytes;
+};
+
+/*------------------ pjt03 JK---------------------*/
 
 #include "threads/thread.h"
 void supplemental_page_table_init (struct supplemental_page_table *spt);
