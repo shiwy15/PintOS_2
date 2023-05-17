@@ -112,11 +112,10 @@ spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 bool
 spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
-	int succ = false;
 	if (!hash_insert(&spt->hash_table, &page->hash_elem)) {
-		succ = true;
+		return true;
 	}
-	return succ;
+	return false;
 }
 
 void
@@ -128,20 +127,68 @@ spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
 /* Get the struct frame, that will be evicted. */
 static struct frame *
 vm_get_victim (void) {
-	struct frame *victim = NULL;
-	 /* TODO: The policy for eviction is up to you. */
+	/* TODO: The policy for eviction is up to you. */
+	struct frame *victim_frame;
+	struct page *victim_page;
+	struct thread *frame_owner;
+	struct list_elem *start = recent_victim_elem;
 
-	return victim;
+	for (recent_victim_elem = start;
+		recent_victim_elem != list_end(&frame_table); 
+		recent_victim_elem = list_next(recent_victim_elem)) {
+		
+		victim_frame = list_entry(recent_victim_elem, struct frame, frame_elem);
+		if (victim_frame->page == NULL) {
+			return victim_frame;
+		}
+		frame_owner = victim_frame->page->t;
+		victim_page = victim_frame->page->va;
+		if (pml4_is_accessed(frame_owner->pml4, victim_page)) {
+			pml4_set_accessed(frame_owner->pml4, victim_page, false);
+		} else {
+			return victim_frame;
+		}
+	}
+
+	for (recent_victim_elem = list_begin(&frame_table);
+		recent_victim_elem != start; 
+		recent_victim_elem = list_next(recent_victim_elem)) {
+		
+		victim_frame = list_entry(recent_victim_elem, struct frame, frame_elem);
+		if (victim_frame->page == NULL) {
+			return victim_frame;
+		}
+		frame_owner = victim_frame->page->t;
+		victim_page = victim_frame->page->va;
+		if (pml4_is_accessed(frame_owner->pml4, victim_page)) {
+			pml4_set_accessed(frame_owner->pml4, victim_page, false);
+		} else {
+			return victim_frame;
+		}
+	}
+
+	recent_victim_elem = list_begin(&frame_table);
+	victim_frame = list_entry(recent_victim_elem, struct frame, frame_elem);
+	return victim_frame;
 }
 
 /* Evict one page and return the corresponding frame.
  * Return NULL on error.*/
 static struct frame *
-vm_evict_frame (void) {
-	struct frame *victim UNUSED = vm_get_victim ();
+vm_evict_frame(void)
+{
+	struct frame *victim UNUSED = vm_get_victim();
 	/* TODO: swap out the victim and return the evicted frame. */
+	ASSERT(victim != NULL);
+	if (victim->page != NULL)
+	{
+		if (swap_out(victim->page) == false)
+		{
+				PANIC("Swap out failed.");
+		}
+	}
 
-	return NULL;
+	return victim;
 }
 
 /* palloc() and get frame. If there is no available page, evict the page
@@ -154,13 +201,16 @@ vm_get_frame (void) {
 	
 	void *kva = palloc_get_page(PAL_USER);
 
-	if (kva == NULL) {
+	if (kva == NULL) 
+	{
 		frame = vm_evict_frame();
 		if (frame->page != NULL) {
 			frame->page->frame = NULL;
 			frame->page = NULL;
 		}
-	}else{
+	}
+	else
+	{
 		frame = malloc(sizeof(struct frame));
 		if (frame == NULL) {
 			PANIC ("todo: handle case when malloc fails.");
@@ -190,7 +240,8 @@ static bool
 vm_handle_wp (struct page *page UNUSED) {
 }
 
-/* Return true on success */
+/* Return true on success
+페이지 폴트를 처리하는 역할을 하는 함수*/
 bool
 vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
@@ -248,7 +299,8 @@ vm_claim_page (void *va UNUSED) {
 	return vm_do_claim_page (page);
 }
 
-/* Claim the PAGE and set up the mmu. */
+/* Claim the PAGE and set up the mmu.
+페이지를 할당하고 프레임과 페이지 테이블 간의 연결을 설정하는 함수 */
 static bool
 vm_do_claim_page (struct page *page) {
 	struct thread *t = page->t;

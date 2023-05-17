@@ -118,6 +118,13 @@ kill(struct intr_frame *f)
    can find more information about both of these in the
    description of "Interrupt 14--Page Fault Exception (#PF)" in
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
+/* 페이지 폴트 핸들러입니다. 이것은 가상 메모리를 구현하기 위해 채워져야 하는 뼈대 코드입니다. 
+프로젝트 2의 일부 솔루션은 또한 이 코드를 수정해야 할 수도 있습니다.
+진입 시, 폴트가 발생한 주소는 CR2 (Control Register 2)에 있으며, 
+폴트에 대한 정보는 F의 error_code 멤버에 설명된대로 포맷되어 있습니다. 
+여기에 표시된 예제 코드는 해당 정보를 구문 분석하는 방법을 보여줍니다. 
+이에 대한 더 많은 정보는 [IA32-v3a] 섹션 5.15 "Exception and Interrupt Reference"의 
+"Interrupt 14 - Page Fault Exception (#PF)" 설명에서 찾을 수 있습니다. */
 static void
 page_fault(struct intr_frame *f)
 {

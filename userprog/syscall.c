@@ -74,6 +74,10 @@ void syscall_init(void)
 /* The main system call interface */
 void syscall_handler(struct intr_frame *f)
 {
+	#ifdef VM
+		thread_current()->user_rsp = f->rsp;
+	#endif
+	
 	switch (f->R.rax) // rax값이 들어가야함.
 	{
 	case SYS_HALT:
