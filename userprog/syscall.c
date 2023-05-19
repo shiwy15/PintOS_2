@@ -259,7 +259,7 @@ int open(const char *file)
 	/*------------------------*/
 
 	/* project 3 : lock 주석 처리 */
-	// lock_acquire(&filesys_lock);
+	lock_acquire(&filesys_lock);
 	struct file *fileobj = filesys_open(file);
 
 	if (fileobj == NULL)
@@ -270,7 +270,7 @@ int open(const char *file)
 	if (fd == -1)
 		file_close(fileobj);
 
-	// lock_release(&filesys_lock);
+	lock_release(&filesys_lock);
 	return fd;
 }
 
