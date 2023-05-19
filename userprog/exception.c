@@ -160,4 +160,8 @@ page_fault(struct intr_frame *f)
 		   user ? "user" : "kernel");
 		   
 	kill (f);	// project3 추가
+
+	/* projec3 참고
+	 * 프로젝트 2까지는 page fault가 났을 때 -1을 리턴하고 종료해야 하기 때문에 exit(-1)만 했음.
+	 * 이제는 저 printf 부분이 필요 없으므로 exit의 위치 옮겨주기 */
 }

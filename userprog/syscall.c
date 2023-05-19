@@ -185,16 +185,19 @@ void exit(int status)
 
 /* 'function함수를 수행하는 스레드'를 생성하는 시스템콜 함수 */
 bool create(const char *file, unsigned initial_size)
-{
-	check_address(file);
-	if (filesys_create(file, initial_size))
-	{
-		return true;
-	}
+{	
+	/* ----- project 3 수정 -----*/
+	if (file)
+		return filesys_create(file, initial_size);
 	else
-	{
-		return false;
-	}
+		exit(-1);
+	/* -------------------------*/
+	// check_address(file);
+
+	// if (filesys_create(file, initial_size))
+	// 	return true;
+	// else
+	// 	return false;
 }
 
 /* 주어진 파일을 삭제하는 시스템콜 함수 */
@@ -249,7 +252,8 @@ int open(const char *file)
 		return -1;
 	/*------------------------*/
 
-	lock_acquire(&filesys_lock);
+	/* project 3 : lock 주석 처리 */
+	// lock_acquire(&filesys_lock);
 	struct file *fileobj = filesys_open(file);
 
 	if (fileobj == NULL)
@@ -260,7 +264,7 @@ int open(const char *file)
 	if (fd == -1)
 		file_close(fileobj);
 
-	lock_release(&filesys_lock);
+	// lock_release(&filesys_lock);
 	return fd;
 }
 
@@ -438,26 +442,28 @@ void process_close_file(int fd)
 
 void *mmap (void *addr, size_t length, int writable, int fd, off_t offset) {
 
-    if (offset % PGSIZE != 0) {
+	/* 오프셋이 페이지 크기로 정렬되었는지 확인 */
+    if (offset % PGSIZE != 0) 
         return NULL;
-    }
-
+	/* addr이 페이지 내림값과 일치하는지, 커널 가상주소인지, NULL이거나 0보다 작은 값인지 확인 */
     if (pg_round_down(addr) != addr || is_kernel_vaddr(addr) || addr == NULL || (long long)length <= 0)
         return NULL;
-    
+    /* 표준입력/출력일 경우 프로세스 종료 */
     if (fd == 0 || fd == 1)
         exit(-1);
-    
+    /* 이미 매핑되어있는 페이지인지 확인 */
     if (spt_find_page(&thread_current()->spt, addr))
         return NULL;
 
+	/* 주어진 fd 에서 파일을 가져옴 */
     struct file *target = process_get_file(fd);
-
     if (target == NULL)
         return NULL;
 
+	/* 주어진 인자들로 메모리 매핑! --> 매핑된 영역의 시작 주소를 ret에 저장 */
     void * ret = do_mmap(addr, length, writable, target, offset);
 
+	/* 시작주소 반환 */
     return ret;
 }
 

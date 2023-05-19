@@ -628,12 +628,13 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 }
 
 struct thread *get_child_process(int pid)
-{
+{   
     struct thread *curr = thread_current();
-    if (list_empty(&curr->children_list))
-    {
-        return NULL;
-    }
+    /* project 3 수정 : 아래 부분 삭제 */
+    // if (list_empty(&curr->children_list))
+    // {
+    //     return NULL;
+    // }
 
     for (struct list_elem *e = list_begin(&curr->children_list); e != list_end(&curr->children_list); e = list_next(e))
     {
