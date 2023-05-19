@@ -148,6 +148,10 @@ struct thread
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;
+	/*----------------[project3]-------------------*/
+	void *stack_bottom;
+	void *rsp_stack;
+	/*----------------[project3]-------------------*/
 #endif
 
 	/* Owned by thread.c. */

@@ -30,19 +30,22 @@ uninit_new (struct page *page, void *va, vm_initializer *init,
 	ASSERT (page != NULL);
 
 	*page = (struct page) {
-		.operations = &uninit_ops,
+		.operations = &uninit_ops,		// 페이지 동작 함수를 가리키는 포인터 설정
 		.va = va,
-		.frame = NULL, /* no frame for now */
+		.frame = NULL, /* no frame for now (현재는 프레임이 없으므로 null)*/
 		.uninit = (struct uninit_page) {
 			.init = init,
 			.type = type,
 			.aux = aux,
-			.page_initializer = initializer,
+			.page_initializer = initializer,	// 페이지 초기화 함수 설정
 		}
 	};
 }
 
 /* Initalize the page on first fault */
+/* 처음 만들어진 페이지들은 uninit 타입.
+ * 프로세스가 해당 페이지에 처음 접근하면 페이지 폴트 발생 
+ * 아래 함수는 페이지 폴트가 발생하고 처음 액세스 될 때 호출되는 페이지 초기화 함수임 */
 static bool
 uninit_initialize (struct page *page, void *kva) {
 	struct uninit_page *uninit = &page->uninit;
@@ -52,6 +55,7 @@ uninit_initialize (struct page *page, void *kva) {
 	void *aux = uninit->aux;
 
 	/* TODO: You may need to fix this function. */
+	/* uninit의 pageinitializer 포인터로 초기화 */
 	return uninit->page_initializer (page, uninit->type, kva) &&
 		(init ? init (page, aux) : true);
 }

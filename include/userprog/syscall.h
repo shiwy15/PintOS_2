@@ -3,7 +3,7 @@
 
 void syscall_init(void);
 /* project2 */
-void check_address(const void *addr);
+struct page * check_address(void *addr);
 struct lock filesys_lock;
 /* project2 */
 

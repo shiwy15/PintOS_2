@@ -13,9 +13,15 @@
 #include "devices/input.h"
 #include "threads/palloc.h"
 
+#include "userprog/syscall.h"
+#include <stdio.h>
+#include "filesys/file.h"
+#include "vm/vm.h"
+
 void syscall_entry(void);
 void syscall_handler(struct intr_frame *);
-void check_address(const void *addr);
+struct page * check_address(void *addr);
+void check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write);
 
 void halt(void);
 void exit(int status);
@@ -35,7 +41,9 @@ unsigned tell(int fd);
 struct file *process_get_file(int fd);
 void process_close_file(int fd);
 int process_add_file(struct file *f);
-struct file *process_get_file(int fd);
+
+void *mmap (void *addr, size_t length, int writable, int fd, off_t offset);
+void munmap (void *addr);
 /*-------------------------[project 2]-------------------------*/
 
 /* System call.
@@ -74,6 +82,10 @@ void syscall_init(void)
 /* The main system call interface */
 void syscall_handler(struct intr_frame *f)
 {
+#ifdef VM
+		thread_current()->rsp_stack = f->rsp;
+#endif
+
 	switch (f->R.rax) // rax값이 들어가야함.
 	{
 	case SYS_HALT:
@@ -87,9 +99,7 @@ void syscall_handler(struct intr_frame *f)
 		break;
 	case SYS_EXEC:
 		if (exec(f->R.rdi) == -1)
-		{
 			exit(-1);
-		}
 		break;
 	case SYS_WAIT:
 		f->R.rax = wait(f->R.rdi);
@@ -107,9 +117,11 @@ void syscall_handler(struct intr_frame *f)
 		f->R.rax = filesize(f->R.rdi);
 		break;
 	case SYS_READ:
+		check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 1);
 		f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_WRITE:
+		check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 0);
 		f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_SEEK:
@@ -121,39 +133,14 @@ void syscall_handler(struct intr_frame *f)
 	case SYS_CLOSE:
 		close(f->R.rdi);
 		break;
-	// case SYS_DUP2:
-	// 	dup2(f->R.rdi, f->R.rsi);
-	// 	break;
-	// case SYS_MMAP:
-	// 	mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
-	// 	break;
-	// case SYS_MUNMAP:
-	// 	munmap(f->R.rdi);
-	// 	break;
-	// case SYS_CHDIR:
-	// 	chdir(f->R.rdi);
-	// 	break;
-	// case SYS_MKDIR:
-	// 	mkdir(f->R.rdi);
-	// 	break;
-	// case SYS_READDIR:
-	// 	readdir(f->R.rdi, f->R.rsi);
-	// 	break;
-	// case SYS_ISDIR:
-	// 	isdir(f->R.rdi);
-	// 	break;
-	// case SYS_INUMBER:
-	// 	inumber(f->R.rdi);
-	// 	break;
-	// case SYS_SYMLINK:
-	// 	symlink(f->R.rdi, f->R.rsi);
-	// 	break;
-	// case SYS_MOUNT:
-	// 	mount(f->R.rdi, f->R.rsi, f->R.rdx);
-	// 	break;
-	// case SYS_UMOUNT:
-	// 	umount(f->R.rdi);
-	// 	break;
+	/*-----project3 추가-----*/
+	case SYS_MMAP:
+		f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+		break;
+	case SYS_MUNMAP:
+		munmap(f->R.rdi);
+		break;
+	/*----------------------*/
 	default:
 		exit(-1);
 		break;
@@ -161,26 +148,25 @@ void syscall_handler(struct intr_frame *f)
 }
 
 /* 입력된 주소가 유효한 주소인지 확인하고, 그렇지 않으면 프로세스를 종료시키는 함수 */
-void check_address(const void *addr)
+struct page * check_address(void *addr)
 {
-	struct thread *curr = thread_current();
-
-	if (is_kernel_vaddr(addr) || addr == NULL || pml4_get_page(curr->pml4, addr) == NULL)
+	if (is_kernel_vaddr(addr))
 	{
 		exit(-1);
 	}
+	return spt_find_page(&thread_current()->spt, addr);
 }
 
-// void get_argument(void *rsp, int **arg, int count)
-// {
-// 	rsp = (int64_t *)rsp + 2; // 원래 stack pointer에서 2칸(16byte) 올라감 : |argc|"argv"|...
-// 	for (int i = 0; i < count; i++)
-// 	{
-// 		check_address(rsp);
-// 		arg[i] = rsp;
-// 		rsp = (int64_t *)rsp + 1;
-// 	}
-// }
+/*-------- project3 추가 ----------*/
+void check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write) {
+    for (int i = 0; i < size; i++) {
+        struct page *page = check_address(buffer + i);    // 인자로 받은 buffer부터 buffer + size까지의 크기가 한 페이지의 크기를 넘을수도 있음
+        if(page == NULL)
+            exit(-1);
+        if(to_write == true && page->writable == false)
+            exit(-1);
+    }
+}
 
 /* pintos를 shutdown하는 시스템콜 함수  */
 void halt(void)
@@ -257,19 +243,22 @@ int exec(const char *cmd_line)
 int open(const char *file)
 {
 	check_address(file);
+	
+	/*----- project3 추가 -----*/
+	if (file == NULL)
+		return -1;
+	/*------------------------*/
+
 	lock_acquire(&filesys_lock);
 	struct file *fileobj = filesys_open(file);
 
 	if (fileobj == NULL)
-	{
 		return -1;
-	}
+
 	int fd = process_add_file(fileobj);
 
 	if (fd == -1)
-	{
 		file_close(fileobj);
-	}
 
 	lock_release(&filesys_lock);
 	return fd;
@@ -418,9 +407,9 @@ int process_add_file(struct file *f)
 	}
 
 	if (curr->next_fd >= FDCOUNT_LIMIT)
-		{
-			return -1;
-		}
+	{
+		return -1;
+	}
 
 	fdt[curr->next_fd] = f;
 	return curr->next_fd;
@@ -445,4 +434,33 @@ void process_close_file(int fd)
 		return;
 
 	curr->fdt[fd] = NULL;
+}
+
+void *mmap (void *addr, size_t length, int writable, int fd, off_t offset) {
+
+    if (offset % PGSIZE != 0) {
+        return NULL;
+    }
+
+    if (pg_round_down(addr) != addr || is_kernel_vaddr(addr) || addr == NULL || (long long)length <= 0)
+        return NULL;
+    
+    if (fd == 0 || fd == 1)
+        exit(-1);
+    
+    if (spt_find_page(&thread_current()->spt, addr))
+        return NULL;
+
+    struct file *target = process_get_file(fd);
+
+    if (target == NULL)
+        return NULL;
+
+    void * ret = do_mmap(addr, length, writable, target, offset);
+
+    return ret;
+}
+
+void munmap (void *addr) {
+    do_munmap(addr);
 }

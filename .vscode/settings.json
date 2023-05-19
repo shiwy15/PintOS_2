@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "uninit.h": "c",
+        "hash.h": "c",
+        "vaddr.h": "c",
+        "process.h": "c",
+        "syscall.h": "c"
+    },
+    "workbench.colorCustomizations": {
+        "terminal.selectionBackground": "#FDA331",
+        "terminal.ansiBlack": "#000000",
+        "terminal.ansiBlue": "#6FB3D2",
+        "terminal.ansiBrightBlack": "#B0B0B0",
+        "terminal.ansiBrightBlue": "#6FB3D2",
+        "terminal.ansiBrightCyan": "#76C7B7",
+        "terminal.ansiBrightGreen": "#A1C659",
+        "terminal.ansiBrightMagenta": "#D381C3",
+        "terminal.ansiBrightRed": "#FB0120",
+        "terminal.ansiBrightWhite": "#FFFFFF",
+        "terminal.ansiBrightYellow": "#FDA331",
+        "terminal.ansiCyan": "#76C7B7",
+        "terminal.ansiGreen": "#A1C659",
+        "terminal.ansiMagenta": "#D381C3",
+        "terminal.ansiRed": "#FB0120",
+        "terminal.ansiWhite": "#E0E0E0",
+        "terminal.ansiYellow": "#FDA331"
+    },
+    
+}

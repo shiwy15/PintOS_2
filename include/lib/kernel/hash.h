@@ -26,6 +26,9 @@
 #include "list.h"
 
 /* Hash element. */
+/* hash_elem 안에는 list_elem이 들어있음. 링크드 리스트의 노드 역할을 함. 
+ * struct page에 hash_elem을 추가해서 해시 테이블의 링크드리스트(버킷 리스트)에 연결될 수 있음 
+ * 따라서 해시 테이블에 요소를 추가하고 검색하려면 hash_elem을 멤버로 포함하는 구조체를 사용해야 함. */
 struct hash_elem {
 	struct list_elem list_elem;
 };
@@ -35,6 +38,9 @@ struct hash_elem {
  * name of the outer structure STRUCT and the member name MEMBER
  * of the hash element.  See the big comment at the top of the
  * file for an example. */
+/* hash_elem을 포함하는 구조체에서 해당 구조체에 대한 포인터를 가져옴.
+ * 이를 통해 구조체의 다른 멤버들에게도 
+ * 각각 hash_elem의 포인터, 구조체의 타입, 해당 구조체 내 hash_elem의 이름을 인자로 받음 */
 #define hash_entry(HASH_ELEM, STRUCT, MEMBER)                   \
 	((STRUCT *) ((uint8_t *) &(HASH_ELEM)->list_elem        \
 		- offsetof (STRUCT, MEMBER.list_elem)))

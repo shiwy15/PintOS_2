@@ -90,13 +90,13 @@ hash_destroy (struct hash *h, hash_action_func *destructor) {
    without inserting NEW. */
 struct hash_elem *
 hash_insert (struct hash *h, struct hash_elem *new) {
-	struct list *bucket = find_bucket (h, new);
-	struct hash_elem *old = find_elem (h, bucket, new);
+	struct list *bucket = find_bucket (h, new);		 	/* 요소가 속하는 버킷 검색 */
+	struct hash_elem *old = find_elem (h, bucket, new);	/* 해당 버킷에서 같은 값을 가진 요소 체크 */
 
-	if (old == NULL)
+	if (old == NULL)					/* 같은 값을 가진 요소가 없으면 해당 버킷의 요소로 추가 */
 		insert_elem (h, bucket, new);
 
-	rehash (h);
+	rehash (h);		/* 해시 테이블의 버킷 리스트 최적화 : 새 요소에 대한 변경 작업 진행 */
 
 	return old;
 }
@@ -119,6 +119,9 @@ hash_replace (struct hash *h, struct hash_elem *new) {
 
 /* Finds and returns an element equal to E in hash table H, or a
    null pointer if no equal element exists in the table. */
+/* 주어진 해시테이블(h)에서 특정요소(e)를 검색하는 함수 
+ * find_bucket : e가 속한 버킷을 찾음 
+ * find_elem : 해당 버킷에서 e와 동일한 해시요소를 찾아 반환.(못찾으면 NULL 반환)*/
 struct hash_elem *
 hash_find (struct hash *h, struct hash_elem *e) {
 	return find_elem (h, find_bucket (h, e), e);
@@ -277,6 +280,7 @@ hash_int (int i) {
 }
 
 /* Returns the bucket in H that E belongs in. */
+/* 주어진 해시테이블에서 해당 요소(e)가 속하는 버킷을 찾음 */
 static struct list *
 find_bucket (struct hash *h, struct hash_elem *e) {
 	size_t bucket_idx = h->hash (e, h->aux) & (h->bucket_cnt - 1);
@@ -285,6 +289,8 @@ find_bucket (struct hash *h, struct hash_elem *e) {
 
 /* Searches BUCKET in H for a hash element equal to E.  Returns
    it if found or a null pointer otherwise. */
+   /* 주어진 해시테이블의 버킷에서 e와 같은 값을 가진 요소를 찾는 함수.
+    * 찾지 못하면 null 반환, 찾으면 해당 요소 반환 */
 static struct hash_elem *
 find_elem (struct hash *h, struct list *bucket, struct hash_elem *e) {
 	struct list_elem *i;
