@@ -155,6 +155,12 @@ struct page * check_address(void *addr)
 		exit(-1);
 	}
 	return spt_find_page(&thread_current()->spt, addr);
+	// struct page *page = spt_find_page(&thread_current()->spt, addr);
+	// if (page == NULL)
+	// 	exit(-1);
+	// else
+	// 	return page;
+
 }
 
 /*-------- project3 추가 ----------*/
@@ -311,6 +317,7 @@ int read(int fd, void *buffer, unsigned size)
 		read_count = file_read(fileobj, buffer, size);
 		lock_release(&filesys_lock);
 	}
+
 	return read_count;
 }
 
